@@ -72,7 +72,6 @@ namespace UCB_Console
         {
             regrets = new double[deviation.Length];
 
-            IOrderedEnumerable<Arm> sortArms;
             double maxIncome;
             int sumCountBatches;
 
@@ -104,8 +103,7 @@ namespace UCB_Console
                         foreach (var arm in arms)
                             arm.SetUCB(BatchSize, sumCountBatches, Parameter);
 
-                        sortArms = arms.OrderByDescending(a => a.UCB);
-                        sortArms.First().Select(BatchSize, ref sumCountBatches);
+                        arms.OrderByDescending(a => a.UCB).First().Select(BatchSize, ref sumCountBatches);
                     }
 
                     regrets[mainIndex] += maxIncome - arms.Select(a => a.Income).Sum();

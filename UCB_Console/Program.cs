@@ -15,17 +15,17 @@ namespace UCB_Console
 
             Bandit.MathExp = 0.5d;
             Bandit.MaxDispersion = 0.25d;
-            Bandit.NumberSimulations = 100000;
-            Bandit.SetDeviation(1.2d, 0.3d, 5);
+            Bandit.NumberSimulations = 400000;
+            Bandit.SetDeviation(1.2d, 0.3d, 7);
 
-            double a0 = 0.75d;
-            double da = 0.01d;
-            int count = 30;
+            var a0 = 0.75d;
+            var da = 0.01d;
+            var count = 30;
 
-            int[] arms = Enumerable.Repeat(2, count).ToArray();
-            int[] numberBatches = Enumerable.Repeat(50, count).ToArray();
-            int[] batchSize = Enumerable.Repeat(100, count).ToArray();
-            double[] a = Enumerable.Range(0, count).Select(i => Math.Round(a0 + i * da, 2)).ToArray();
+            var arms = Enumerable.Repeat(2, count).ToArray();
+            var numberBatches = Enumerable.Repeat(50, count).ToArray();
+            var batchSize = Enumerable.Repeat(100, count).ToArray();
+            var a = Enumerable.Range(0, count).Select(i => Math.Round(a0 + i * da, 2)).ToArray();
 
             Simulation simulation = new Simulation(5);
             simulation.Run(arms, batchSize, numberBatches, a);
