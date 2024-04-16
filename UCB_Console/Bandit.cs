@@ -77,7 +77,7 @@ namespace UCB_Console
             _regrets = new double[s_deviation.Length];
 
             double maxIncome;
-            int sumCountData, startBatchSize, horizon, counter;
+            int sumCountData, batchSize, horizon, counter;
 
             for (int mainIndex = 0; mainIndex < s_deviation.Length; mainIndex++)
             {
@@ -94,14 +94,15 @@ namespace UCB_Console
 
                 for (int num = 0; num < NumberSimulations; num++)
                 {
-                    startBatchSize = StartBatchSize;
+                    batchSize = StartBatchSize;
                     horizon = Horizon;
                     counter = sumCountData = 0;
 
                     foreach (var arm in _arms)
                     {
                         arm.Reset();
-                        arm.Select(startBatchSize, ref sumCountData, ref horizon);
+                        arm.Select(batchSize, ref sumCountData, ref horizon);
+
                         counter++;
                     }
 
@@ -113,10 +114,10 @@ namespace UCB_Console
                         if (counter >= TimeChangeBatch)
                         {
                             counter = 0;
-                            startBatchSize = (int)(Alpha * startBatchSize);
+                            batchSize = (int)(Alpha * batchSize);
                         }
 
-                        _arms.OrderByDescending(a => a.UCB).First().Select(startBatchSize, ref sumCountData, ref horizon);
+                        _arms.OrderByDescending(a => a.UCB).First().Select(batchSize, ref sumCountData, ref horizon);
                         counter++;
                     }
 

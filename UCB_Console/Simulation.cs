@@ -29,7 +29,7 @@ namespace UCB_Console
         }
 
         private void UpdateProgress()
-        { 
+        {
             _countProcessedPoints++;
 
             Console.SetCursorPosition(0, 0);
@@ -72,10 +72,10 @@ namespace UCB_Console
 
         public void Save(string path)
         {
-            var name = $"M is {_bandits[0].StartBatchSize}, A is {_bandits[0].Alpha}, T is {_bandits[0].TimeChangeBatch}";
-            var time = $"{DateTime.Now:d}. Date: {DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
+            var name = $"M - {_bandits[0].StartBatchSize}, T - {_bandits[0].TimeChangeBatch}, A - {_bandits[0].Alpha}";
+            var time = $"{DateTime.Now:d} {DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
 
-            using StreamWriter writer = new(@$"{path}\{name}_{time}.txt");
+            using StreamWriter writer = new(@$"{path}\{name} ({time}).txt");
 
             writer.Write("d");
 
