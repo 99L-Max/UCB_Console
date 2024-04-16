@@ -20,7 +20,7 @@ namespace UCB_Console
             Bandit.SetDeviation(0.9d, 0.3d, 7);
 
             //Измение альфы
-            var alphas = Enumerable.Range(10, 11).Select(x => x * 0.1d).ToArray();
+            var alphas = Enumerable.Range(10, 11).Select(x => Math.Round(x * 0.1d, 1)).ToArray();
 
             foreach (var alp in alphas)
             {
