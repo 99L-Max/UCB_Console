@@ -5,19 +5,21 @@ namespace UCB_Console
 {
     class Bandit
     {
-        private static double mathExp;
-        private static double[] deviation;
+        private static double s_mathExp;
+        private static double[] s_deviation;
 
-        private readonly Arm[] arms;
-        private readonly double sqrtDivDN, sqrtMulDN;
+        private readonly Arm[] _arms;
+        private readonly double _sqrtDivDN, _sqrtMulDN;
 
-        private double[] regrets;
+        private double[] _regrets;
 
         public static int NumberSimulations;
         public static double MaxDispersion;
 
-        public readonly int BatchSize;
-        public readonly int NumberBatches;
+        public readonly double Alpha;
+        public readonly int TimeChangeBatch;
+
+        public readonly int StartBatchSize;
         public readonly int Horizon;
         public readonly double Parameter;
 
@@ -25,24 +27,26 @@ namespace UCB_Console
         public event EventUpdateData PointProcessed;
         public event EventUpdateData Finished;
 
-        public Bandit(int countArms, int batchSize, int numberBatches, double parameter)
+        public Bandit(int countArms, int startBatchSize, int horizon, double parameter, double alpha, int timeChangeBatch)
         {
-            arms = new Arm[countArms];
+            _arms = new Arm[countArms];
 
-            BatchSize = batchSize;
-            NumberBatches = numberBatches;
+            StartBatchSize = startBatchSize;
+            Horizon = horizon;
             Parameter = parameter;
-            Horizon = BatchSize * NumberBatches;
 
-            sqrtDivDN = Math.Sqrt(MaxDispersion / Horizon);
-            sqrtMulDN = Math.Sqrt(MaxDispersion * Horizon);
+            Alpha = alpha;
+            TimeChangeBatch = timeChangeBatch;
+
+            _sqrtDivDN = Math.Sqrt(MaxDispersion / Horizon);
+            _sqrtMulDN = Math.Sqrt(MaxDispersion * Horizon);
         }
 
         public double MaxDeviation { private set; get; }
 
         public double MaxRegrets { private set; get; } = 0d;
 
-        public static int NumberDeviations => deviation.Length;
+        public static int NumberDeviations => s_deviation.Length;
 
         public static double MathExp
         {
@@ -51,76 +55,86 @@ namespace UCB_Console
                 if (value > 1d || value < 0d)
                     throw new ArgumentException("For the Bernoulli distribution expectation of p must be between 0 and 1 inclusive.");
 
-                mathExp = value;
+                s_mathExp = value;
             }
-            get => mathExp;
+            get => s_mathExp;
         }
 
         public static double DeltaDevition { private set; get; }
 
-        public double GetRegrets(int i) => regrets[i];
+        public double GetRegrets(int i) => _regrets[i];
 
-        public static double GetDeviation(int i) => deviation[i];
+        public static double GetDeviation(int i) => s_deviation[i];
 
         public static void SetDeviation(double startDevition, double deltaDevision, int count)
         {
             DeltaDevition = deltaDevision;
-            deviation = Enumerable.Range(0, count).Select(i => Math.Round(startDevition + i * deltaDevision, 1)).ToArray();
+            s_deviation = Enumerable.Range(0, count).Select(i => Math.Round(startDevition + i * deltaDevision, 1)).ToArray();
         }
 
         public void RunSimulation()
         {
-            regrets = new double[deviation.Length];
+            _regrets = new double[s_deviation.Length];
 
             double maxIncome;
-            int sumCountBatches;
+            int sumCountData, startBatchSize, horizon, counter;
 
-            for (int mainIndex = 0; mainIndex < deviation.Length; mainIndex++)
+            for (int mainIndex = 0; mainIndex < s_deviation.Length; mainIndex++)
             {
-                if (deviation[mainIndex] == 0d)
+                if (s_deviation[mainIndex] == 0d)
                 {
-                    PointProcessed.Invoke();
+                    PointProcessed?.Invoke();
                     continue;
                 }
 
-                for (int i = 0; i < arms.Length; i++)
-                    arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * deviation[mainIndex] * sqrtDivDN, MaxDispersion);
+                for (int i = 0; i < _arms.Length; i++)
+                    _arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * s_deviation[mainIndex] * _sqrtDivDN, MaxDispersion);
 
-                maxIncome = arms.Select(a => a.Expectation).Max() * Horizon;
+                maxIncome = _arms.Select(a => a.Expectation).Max() * Horizon;
 
                 for (int num = 0; num < NumberSimulations; num++)
                 {
-                    sumCountBatches = 0;
+                    startBatchSize = StartBatchSize;
+                    horizon = Horizon;
+                    counter = sumCountData = 0;
 
-                    foreach (var arm in arms)
+                    foreach (var arm in _arms)
                     {
                         arm.Reset();
-                        arm.Select(BatchSize, ref sumCountBatches);
+                        arm.Select(startBatchSize, ref sumCountData, ref horizon);
+                        counter++;
                     }
 
-                    for (int batch = arms.Length; batch < NumberBatches; batch++)
+                    while (horizon > 0)
                     {
-                        foreach (var arm in arms)
-                            arm.SetUCB(BatchSize, sumCountBatches, Parameter);
+                        foreach (var arm in _arms)
+                            arm.SetUCB(sumCountData, Parameter);
 
-                        arms.OrderByDescending(a => a.UCB).First().Select(BatchSize, ref sumCountBatches);
+                        if (counter >= TimeChangeBatch)
+                        {
+                            counter = 0;
+                            startBatchSize = (int)(Alpha * startBatchSize);
+                        }
+
+                        _arms.OrderByDescending(a => a.UCB).First().Select(startBatchSize, ref sumCountData, ref horizon);
+                        counter++;
                     }
 
-                    regrets[mainIndex] += maxIncome - arms.Select(a => a.Income).Sum();
+                    _regrets[mainIndex] += maxIncome - _arms.Select(a => a.Income).Sum();
                 }
 
-                regrets[mainIndex] /= NumberSimulations * sqrtMulDN;
+                _regrets[mainIndex] /= NumberSimulations * _sqrtMulDN;
 
-                if (MaxRegrets < regrets[mainIndex])
+                if (MaxRegrets < _regrets[mainIndex])
                 {
-                    MaxRegrets = regrets[mainIndex];
-                    MaxDeviation = deviation[mainIndex];
+                    MaxRegrets = _regrets[mainIndex];
+                    MaxDeviation = s_deviation[mainIndex];
                 }
 
-                PointProcessed.Invoke();
+                PointProcessed?.Invoke();
             }
 
-            Finished.Invoke();
+            Finished?.Invoke();
         }
     }
 }

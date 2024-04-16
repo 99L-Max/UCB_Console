@@ -4,7 +4,7 @@ namespace UCB_Console
 {
     class Arm
     {
-        private readonly Random random = new();
+        private readonly Random _random = new();
 
         public readonly double Expectation;
         public readonly double Dispersion;
@@ -19,26 +19,23 @@ namespace UCB_Console
             Dispersion = dispersion;
         }
 
-        public void Reset()
-        {
-            Counter = 0;
-            Income = 0;
-            UCB = 0;
-        }
+        public void Reset() =>
+            Income = UCB = Counter = 0;
 
-        public void Select(int data, ref int countBatches)
+        public void Select(int data, ref int countSumData, ref int horizon)
         {
-            countBatches++;
-            Counter++;
-            
+            data = Math.Min(data, horizon);
+            horizon -= data;
+
+            countSumData += data;
+            Counter += data;
+
             while (data-- > 0)
-                if (random.NextDouble() < Expectation)
+                if (_random.NextDouble() < Expectation)
                     Income++;
         }
 
-        public void SetUCB(int batchSize, int countBatches, double a)
-        {
-            UCB = Income / Counter + a * Math.Sqrt(Dispersion * batchSize * Math.Log(countBatches) / Counter);
-        }
+        public void SetUCB(int countData, double a) =>
+            UCB = Income / Counter + a * Math.Sqrt(Dispersion * Math.Log(countData) / Counter);
     }
 }
