@@ -32,8 +32,7 @@ namespace UCB_Console
         {
             _countProcessedPoints++;
 
-            Console.SetCursorPosition(0, 0);
-            Console.Write($"Выполнено {_countProcessedPoints} / {_countPoints} ({_countProcessedPoints * 100 / _countPoints}%)");
+            Console.Write($"\rВыполнено {_countProcessedPoints} / {_countPoints} ({_countProcessedPoints * 100 / _countPoints}%)");
         }
 
         private static bool CheckArraysLength(params Array[] arrays) =>

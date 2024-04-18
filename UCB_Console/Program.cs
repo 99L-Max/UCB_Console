@@ -17,36 +17,26 @@ namespace UCB_Console
             Bandit.MathExp = 0.5d;
             Bandit.MaxDispersion = 0.25d;
             Bandit.NumberSimulations = 200000;
-            Bandit.SetDeviation(0.9d, 0.3d, 7);
+            Bandit.SetDeviation(0d, 0.3d, 101);
 
-            //Измение альфы
-            var batchSizes = Enumerable.Range(1, 8).Select(x => x * 25).ToArray();
+            var parameter = new double[] { 0.70, 0.65, 0.61, 0.56, 0.53, 0.50, 0.47, 0.44 };
+            var count = parameter.Length;
 
-            foreach (var size in batchSizes)
-            {
-                Console.Clear();
+            var arms = Enumerable.Repeat(2, count).ToArray();
+            var horizons = Enumerable.Repeat(5000, count).ToArray();
 
-                var a0 = Math.Round(-0.2d / 175 * size + (0.25d - 200 * (-0.2d / 175)), 2);
-                var da = 0.01d;
-                var count = 30;
+            var startBatchSize = Enumerable.Range(1, count).Select(x => x * 25).ToArray();
+            var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
+            var alpha = Enumerable.Repeat(1.5d, count).ToArray();
 
-                var arms = Enumerable.Repeat(2, count).ToArray();
-                var horizons = Enumerable.Repeat(5000, count).ToArray();
-                var parameter = Enumerable.Range(0, count).Select(x => Math.Round(a0 + x * da, 2)).ToArray();
+            var simulation = new Simulation(maxCountThreads);
 
-                var startBatchSize = Enumerable.Repeat(size, count).ToArray();
-                var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
-                var alpha = Enumerable.Repeat(1.5d, count).ToArray();
+            simulation.Run(arms, startBatchSize, horizons, parameter, alpha, timeChangeBatch);
 
-                var simulation = new Simulation(maxCountThreads);
+            if (!Directory.Exists(pathSave))
+                Directory.CreateDirectory(pathSave);
 
-                simulation.Run(arms, startBatchSize, horizons, parameter, alpha, timeChangeBatch);
-
-                if (!Directory.Exists(pathSave))
-                    Directory.CreateDirectory(pathSave);
-
-                simulation.Save(pathSave);
-            }
+            simulation.Save(pathSave);
         }
     }
 }
