@@ -17,30 +17,36 @@ namespace UCB_Console
             Bandit.MathExp = 0.5d;
             Bandit.MaxDispersion = 0.25d;
             Bandit.NumberSimulations = 200000;
-            Bandit.SetDeviation(0d, 0.3d, 101);
+            Bandit.SetDeviation(0.9d, 0.3d, 7);
 
-            //var a0 = 0.45d;
-            //var da = 0.01d;
-            //var count = 30;
+            //Измение альфы
+            var batchSizes = Enumerable.Range(1, 8).Select(x => x * 25).ToArray();
 
-            var parameter = new double[] { 0.61, 0.60, 0.59, 0.57, 0.58, 0.57, 0.56, 0.56, 0.55, 0.54, 0.53 };
-            var count = parameter.Length;
+            foreach (var size in batchSizes)
+            {
+                Console.Clear();
 
-            var arms = Enumerable.Repeat(2, count).ToArray();
-            var horizons = Enumerable.Repeat(5000, count).ToArray();
+                var a0 = Math.Round(-0.2d / 175 * size + (0.25d - 200 * (-0.2d / 175)), 2);
+                var da = 0.01d;
+                var count = 30;
 
-            var startBatchSize = Enumerable.Repeat(100, count).ToArray();
-            var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
-            var alpha = Enumerable.Range(10, 11).Select(x => Math.Round(x * 0.1d, 1)).ToArray();
+                var arms = Enumerable.Repeat(2, count).ToArray();
+                var horizons = Enumerable.Repeat(5000, count).ToArray();
+                var parameter = Enumerable.Range(0, count).Select(x => Math.Round(a0 + x * da, 2)).ToArray();
 
-            var simulation = new Simulation(maxCountThreads);
+                var startBatchSize = Enumerable.Repeat(size, count).ToArray();
+                var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
+                var alpha = Enumerable.Repeat(1.5d, count).ToArray();
 
-            simulation.Run(arms, startBatchSize, horizons, parameter, alpha, timeChangeBatch);
+                var simulation = new Simulation(maxCountThreads);
 
-            if (!Directory.Exists(pathSave))
-                Directory.CreateDirectory(pathSave);
+                simulation.Run(arms, startBatchSize, horizons, parameter, alpha, timeChangeBatch);
 
-            simulation.Save(pathSave);
+                if (!Directory.Exists(pathSave))
+                    Directory.CreateDirectory(pathSave);
+
+                simulation.Save(pathSave);
+            }
         }
     }
 }
