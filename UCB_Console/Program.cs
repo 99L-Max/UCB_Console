@@ -9,7 +9,7 @@ namespace UCB_Console
         static void Main(string[] args)
         {
             var pathSave = @"E:\НовГУ\2) Магистратура\1 курс\Научная деятельность\Результаты\10) Переменный размер пакета\TXT";
-            var maxCountThreads = 5;
+            var maxCountThreads = 6;
 
             if (!Directory.Exists(pathSave))
                 throw new Exception("Указан несуществующий путь сохранения");
@@ -19,14 +19,16 @@ namespace UCB_Console
             Bandit.NumberSimulations = 200000;
             Bandit.SetDeviation(0d, 0.3d, 101);
 
-            var parameter = new double[] { 0.70, 0.65, 0.61, 0.56, 0.53, 0.50, 0.47, 0.44 };
+            //Изменение времени обновления
+
+            var parameter = new double[] { 0.62, 0.66, 0.67, 0.67 };
             var count = parameter.Length;
+            var timeChangeBatch = Enumerable.Range(1, count).Select(x => x * 5).ToArray();
 
             var arms = Enumerable.Repeat(2, count).ToArray();
             var horizons = Enumerable.Repeat(5000, count).ToArray();
 
-            var startBatchSize = Enumerable.Range(1, count).Select(x => x * 25).ToArray();
-            var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
+            var startBatchSize = Enumerable.Repeat(50, count).ToArray();
             var alpha = Enumerable.Repeat(1.5d, count).ToArray();
 
             var simulation = new Simulation(maxCountThreads);
