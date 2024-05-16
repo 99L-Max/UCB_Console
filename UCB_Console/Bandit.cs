@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace UCB_Console
@@ -11,7 +12,7 @@ namespace UCB_Console
         private readonly Arm[] _arms;
         private readonly double _sqrtDivDN, _sqrtMulDN;
 
-        private double[] _regrets;
+        private Dictionary<double, double> _regrets;
 
         public static int NumberSimulations;
         public static double MaxDispersion;
@@ -48,6 +49,8 @@ namespace UCB_Console
 
         public static int NumberDeviations => s_deviation.Length;
 
+        public static double[] Deviations => (double[])s_deviation.Clone();
+
         public static double MathExp
         {
             set
@@ -62,9 +65,7 @@ namespace UCB_Console
 
         public static double DeltaDevition { private set; get; }
 
-        public double GetRegrets(int i) => _regrets[i];
-
-        public static double GetDeviation(int i) => s_deviation[i];
+        public double GetRegrets(double dev) => _regrets[dev];
 
         public static void SetDeviation(double startDevition, double deltaDevision, int count)
         {
@@ -74,21 +75,21 @@ namespace UCB_Console
 
         public void RunSimulation()
         {
-            _regrets = new double[s_deviation.Length];
+            _regrets = s_deviation.ToDictionary(k => k, v => 0d);
 
             double maxIncome;
             int sumCountData, batchSize, horizon, counter;
 
-            for (int mainIndex = 0; mainIndex < s_deviation.Length; mainIndex++)
+            foreach(var dev in s_deviation)
             {
-                if (s_deviation[mainIndex] == 0d)
+                if (dev == 0d)
                 {
                     PointProcessed?.Invoke();
                     continue;
                 }
 
                 for (int i = 0; i < _arms.Length; i++)
-                    _arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * s_deviation[mainIndex] * _sqrtDivDN, MaxDispersion);
+                    _arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * dev * _sqrtDivDN, MaxDispersion);
 
                 maxIncome = _arms.Select(a => a.Expectation).Max() * Horizon;
 
@@ -121,20 +122,14 @@ namespace UCB_Console
                         counter++;
                     }
 
-                    _regrets[mainIndex] += maxIncome - _arms.Select(a => a.Income).Sum();
+                    _regrets[dev] += maxIncome - _arms.Select(a => a.Income).Sum();
                 }
 
-                _regrets[mainIndex] /= NumberSimulations * _sqrtMulDN;
-
-                if (MaxRegrets < _regrets[mainIndex])
-                {
-                    MaxRegrets = _regrets[mainIndex];
-                    MaxDeviation = s_deviation[mainIndex];
-                }
-
+                _regrets[dev] /= NumberSimulations * _sqrtMulDN;
                 PointProcessed?.Invoke();
             }
 
+            (MaxDeviation, MaxRegrets) = _regrets.Aggregate((max, next) => next.Value > max.Value ? next : max);
             Finished?.Invoke();
         }
     }

@@ -8,32 +8,29 @@ namespace UCB_Console
     {
         static void Main(string[] args)
         {
-            var pathSave = @"E:\НовГУ\2) Магистратура\1 курс\Научная деятельность\Результаты\10) Переменный размер пакета\TXT";
-            var maxCountThreads = 6;
+            string pathSave = @"E:\НовГУ\2) Магистратура\1 курс\Научная деятельность\Результаты\10) Переменный размер пакета\TXT";
 
             if (!Directory.Exists(pathSave))
                 throw new Exception("Указан несуществующий путь сохранения");
 
             Bandit.MathExp = 0.5d;
             Bandit.MaxDispersion = 0.25d;
-            Bandit.NumberSimulations = 200000;
-            Bandit.SetDeviation(0d, 0.3d, 101);
+            Bandit.NumberSimulations = 400000;
+            Bandit.SetDeviation(1.2d, 0.3d, 7);
 
-            //Изменение времени обновления
-
-            var parameter = new double[] { 0.62, 0.66, 0.67, 0.67 };
-            var count = parameter.Length;
-            var timeChangeBatch = Enumerable.Range(1, count).Select(x => x * 5).ToArray();
+            var a0 = 0.75d;
+            var da = 0.01d;
+            var count = 5;
 
             var arms = Enumerable.Repeat(2, count).ToArray();
+            var startBatchSize = Enumerable.Repeat(100, count).ToArray();
             var horizons = Enumerable.Repeat(5000, count).ToArray();
+            var parameters = Enumerable.Range(0, count).Select(i => Math.Round(a0 + i * da, 2)).ToArray();
+            var alphas = Enumerable.Repeat(1.5, count).ToArray();
+            var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
 
-            var startBatchSize = Enumerable.Repeat(50, count).ToArray();
-            var alpha = Enumerable.Repeat(1.5d, count).ToArray();
-
-            var simulation = new Simulation(maxCountThreads);
-
-            simulation.Run(arms, startBatchSize, horizons, parameter, alpha, timeChangeBatch);
+            Simulation simulation = new Simulation(5);
+            simulation.Run(arms, startBatchSize, horizons, parameters, alphas, timeChangeBatch);
 
             if (!Directory.Exists(pathSave))
                 Directory.CreateDirectory(pathSave);

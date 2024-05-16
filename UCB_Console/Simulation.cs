@@ -71,7 +71,7 @@ namespace UCB_Console
 
         public void Save(string path)
         {
-            var name = $"M - {_bandits[0].StartBatchSize}, T - {_bandits[0].TimeChangeBatch}, A - {_bandits[0].Alpha}";
+            var name = $"N - {_bandits[0].Horizon}, M - {_bandits[0].StartBatchSize}, T - {_bandits[0].TimeChangeBatch}, A - {_bandits[0].Alpha}";
             var time = $"{DateTime.Now:d} {DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
 
             using StreamWriter writer = new(@$"{path}\{name} ({time}).txt");
@@ -83,9 +83,9 @@ namespace UCB_Console
 
             writer.WriteLine();
 
-            for (int d = 0; d < Bandit.NumberDeviations; d++)
+            foreach (var d in Bandit.Deviations)
             {
-                writer.Write(Bandit.GetDeviation(d));
+                writer.Write(d);
 
                 foreach (var b in _bandits)
                     writer.Write(" " + b.GetRegrets(d));
