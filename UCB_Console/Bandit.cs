@@ -4,83 +4,81 @@ using System.Linq;
 
 namespace UCB_Console
 {
+    enum RuleChangeBatch
+    {
+        Const,
+        Alpha,
+        Log
+    }
+
     class Bandit
     {
-        private static double s_mathExp;
-        private static double[] s_deviation;
-
         private readonly Arm[] _arms;
+        private readonly int[] _batches;
         private readonly double _sqrtDivDN, _sqrtMulDN;
 
         private Dictionary<double, double> _regrets;
 
-        public static int NumberSimulations;
-        public static double MaxDispersion;
-
+        public readonly RuleChangeBatch RuleChangeBatch;
+        public readonly double Expectation;
+        public readonly double Variance;
+        public readonly int NumberBatches;
+        public readonly int StartBatchSize;
         public readonly double Alpha;
         public readonly int TimeChangeBatch;
-
-        public readonly int StartBatchSize;
         public readonly int Horizon;
         public readonly double Parameter;
 
-        public delegate void EventUpdateData();
-        public event EventUpdateData PointProcessed;
-        public event EventUpdateData Finished;
+        public Action PointProcessed;
+        public Action<Bandit> GameOver;
 
-        public Bandit(int countArms, int startBatchSize, int horizon, double parameter, double alpha, int timeChangeBatch)
+        public Bandit(RuleChangeBatch rule, double expectation, double variance, int countArms, int numberBatches, int startBatchSize, double parameter, double alpha = 1.5, int timeChangeBatch = 10)
         {
+            if (expectation < 0d || expectation > 1d)
+                throw new ArgumentException("Incorrect mathematical expectation. The mathematical expectation must be greater than or equal to 0 and less than or equal to 1.");
+
+            if (variance < 0d || variance > 0.25d)
+                throw new ArgumentException("Incorrect variance. The variance must be greater than or equal to 0 and less than or equal to 0.25.");
+
             _arms = new Arm[countArms];
+            _batches = new int[NumberBatches];
 
+            _batches = rule switch
+            {
+                RuleChangeBatch.Alpha => Enumerable.Range(0, numberBatches - countArms).Select(i => (int)(Math.Pow(alpha, i / timeChangeBatch) * startBatchSize)).ToArray(),
+                RuleChangeBatch.Log => Enumerable.Range(0, numberBatches - countArms).Select(x => startBatchSize * (int)Math.Exp(x)).ToArray(),
+                _ => Enumerable.Repeat(startBatchSize, numberBatches - countArms).ToArray(),
+            };
+
+            Horizon = startBatchSize * countArms + _batches.Sum();
+            RuleChangeBatch = rule;
+            Expectation = expectation;
+            Variance = variance;
+            NumberBatches = numberBatches;
             StartBatchSize = startBatchSize;
-            Horizon = horizon;
             Parameter = parameter;
-
             Alpha = alpha;
             TimeChangeBatch = timeChangeBatch;
 
-            _sqrtDivDN = Math.Sqrt(MaxDispersion / Horizon);
-            _sqrtMulDN = Math.Sqrt(MaxDispersion * Horizon);
+            _sqrtDivDN = Math.Sqrt(Variance / Horizon);
+            _sqrtMulDN = Math.Sqrt(Variance * Horizon);
         }
 
         public double MaxDeviation { private set; get; }
 
-        public double MaxRegrets { private set; get; } = 0d;
+        public double MaxRegrets { private set; get; }
 
-        public static int NumberDeviations => s_deviation.Length;
+        public Dictionary<double, double> Regrets => 
+            _regrets.ToDictionary(k => k.Key, v => v.Value);
 
-        public static double[] Deviations => (double[])s_deviation.Clone();
-
-        public static double MathExp
+        public void Play(double[] deviations, int gamesCount)
         {
-            set
-            {
-                if (value > 1d || value < 0d)
-                    throw new ArgumentException("For the Bernoulli distribution expectation of p must be between 0 and 1 inclusive.");
-
-                s_mathExp = value;
-            }
-            get => s_mathExp;
-        }
-
-        public static double DeltaDevition { private set; get; }
-
-        public double GetRegrets(double dev) => _regrets[dev];
-
-        public static void SetDeviation(double startDevition, double deltaDevision, int count)
-        {
-            DeltaDevition = deltaDevision;
-            s_deviation = Enumerable.Range(0, count).Select(i => Math.Round(startDevition + i * deltaDevision, 1)).ToArray();
-        }
-
-        public void RunSimulation()
-        {
-            _regrets = s_deviation.ToDictionary(k => k, v => 0d);
+            _regrets = deviations.ToDictionary(k => k, v => 0d);
 
             double maxIncome;
-            int sumCountData, batchSize, horizon, counter;
+            int sumCountData;
 
-            foreach(var dev in s_deviation)
+            foreach (var dev in deviations)
             {
                 if (dev == 0d)
                 {
@@ -89,48 +87,37 @@ namespace UCB_Console
                 }
 
                 for (int i = 0; i < _arms.Length; i++)
-                    _arms[i] = new Arm(MathExp + (i == 0 ? 1 : -1) * dev * _sqrtDivDN, MaxDispersion);
+                    _arms[i] = new Arm(Expectation + (i == 0 ? dev : -dev) * _sqrtDivDN, Variance);
 
                 maxIncome = _arms.Select(a => a.Expectation).Max() * Horizon;
 
-                for (int num = 0; num < NumberSimulations; num++)
+                for (int num = 0; num < gamesCount; num++)
                 {
-                    batchSize = StartBatchSize;
-                    horizon = Horizon;
-                    counter = sumCountData = 0;
+                    sumCountData = 0;
 
                     foreach (var arm in _arms)
                     {
                         arm.Reset();
-                        arm.Select(batchSize, ref sumCountData, ref horizon);
-
-                        counter++;
+                        arm.Select(StartBatchSize, ref sumCountData);
                     }
 
-                    while (horizon > 0)
+                    foreach (var batch in _batches)
                     {
                         foreach (var arm in _arms)
                             arm.SetUCB(sumCountData, Parameter);
 
-                        if (counter >= TimeChangeBatch)
-                        {
-                            counter = 0;
-                            batchSize = (int)(Alpha * batchSize);
-                        }
-
-                        _arms.OrderByDescending(a => a.UCB).First().Select(batchSize, ref sumCountData, ref horizon);
-                        counter++;
+                        _arms.OrderByDescending(a => a.UCB).First().Select(batch, ref sumCountData);
                     }
 
                     _regrets[dev] += maxIncome - _arms.Select(a => a.Income).Sum();
                 }
 
-                _regrets[dev] /= NumberSimulations * _sqrtMulDN;
+                _regrets[dev] /= gamesCount * _sqrtMulDN;
                 PointProcessed?.Invoke();
             }
 
             (MaxDeviation, MaxRegrets) = _regrets.Aggregate((max, next) => next.Value > max.Value ? next : max);
-            Finished?.Invoke();
+            GameOver?.Invoke(this);
         }
     }
 }

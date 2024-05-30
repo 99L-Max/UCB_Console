@@ -7,26 +7,23 @@ namespace UCB_Console
         private readonly Random _random = new();
 
         public readonly double Expectation;
-        public readonly double Dispersion;
+        public readonly double Variance;
 
         public int Counter { private set; get; }
         public double Income { private set; get; }
         public double UCB { private set; get; }
 
-        public Arm(double expectation, double dispersion)
+        public Arm(double expectation, double variance)
         {
             Expectation = expectation;
-            Dispersion = dispersion;
+            Variance = variance;
         }
 
         public void Reset() =>
             Income = UCB = Counter = 0;
 
-        public void Select(int data, ref int countSumData, ref int horizon)
+        public void Select(int data, ref int countSumData)
         {
-            data = Math.Min(data, horizon);
-            horizon -= data;
-
             countSumData += data;
             Counter += data;
 
@@ -36,6 +33,6 @@ namespace UCB_Console
         }
 
         public void SetUCB(int countData, double a) =>
-            UCB = Income / Counter + a * Math.Sqrt(Dispersion * Math.Log(countData) / Counter);
+            UCB = Income / Counter + a * Math.Sqrt(Variance * Math.Log(countData) / Counter);
     }
 }

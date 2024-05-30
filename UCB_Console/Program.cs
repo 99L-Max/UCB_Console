@@ -13,29 +13,53 @@ namespace UCB_Console
             if (!Directory.Exists(pathSave))
                 throw new Exception("Указан несуществующий путь сохранения");
 
-            Bandit.MathExp = 0.5d;
-            Bandit.MaxDispersion = 0.25d;
-            Bandit.NumberSimulations = 400000;
-            Bandit.SetDeviation(1.2d, 0.3d, 7);
+            //Общие параметры
+            var rule = RuleChangeBatch.Alpha;
+            var expectation = 0.5d;
+            var variance = 0.25d;
 
-            var a0 = 0.75d;
-            var da = 0.01d;
-            var count = 5;
+            //Отклонения d
+            var deviationStart = 0.9d;
+            var deviationDelta = 0.3d;
+            var deviationCount = 7;
 
-            var arms = Enumerable.Repeat(2, count).ToArray();
-            var startBatchSize = Enumerable.Repeat(100, count).ToArray();
-            var horizons = Enumerable.Repeat(5000, count).ToArray();
-            var parameters = Enumerable.Range(0, count).Select(i => Math.Round(a0 + i * da, 2)).ToArray();
-            var alphas = Enumerable.Repeat(1.5, count).ToArray();
-            var timeChangeBatch = Enumerable.Repeat(10, count).ToArray();
+            var deviations = Enumerable.Range(0, deviationCount).Select(x => Math.Round(deviationStart + x * deviationDelta, 1)).ToArray();
 
-            Simulation simulation = new Simulation(5);
-            simulation.Run(arms, startBatchSize, horizons, parameters, alphas, timeChangeBatch);
+            //Параметр стратегии a
+            var parameterStart = 0.45d;
+            var parameterDelta = 0.01d;
+            var parameterCount = 30;
+
+            //Настройки симуляций
+            var countGames = 200000;
+            var countThreads = 6;
+
+            //Данные бандита
+            var countArms = 2;
+            var startBatchSize = 50;
+            var numberBatches = 50;
+            var timeChangeBatch = 10;
+            var alpha = 1.0d;
+
+            //Массивы для бандитов
+            var countsArms = Enumerable.Repeat(countArms, parameterCount).ToArray();
+            var numbersBatches = Enumerable.Repeat(numberBatches, parameterCount).ToArray();
+            var startsBatchSize = Enumerable.Repeat(startBatchSize, parameterCount).ToArray();
+            var parameters = Enumerable.Range(0, parameterCount).Select(i => Math.Round(parameterStart + i * parameterDelta, 2)).ToArray();
+            var alphas = Enumerable.Repeat(alpha, parameterCount).ToArray();
+            var timesChangeBatch = Enumerable.Repeat(timeChangeBatch, parameterCount).ToArray();
+
+            var player = new Player(rule, expectation, variance, countsArms, numbersBatches, startsBatchSize, parameters, alphas, timesChangeBatch);
+
+            player.Play(deviations, countGames, countThreads);
+
+            Console.Clear();
+            Console.WriteLine(player.GameResult);
 
             if (!Directory.Exists(pathSave))
                 Directory.CreateDirectory(pathSave);
 
-            simulation.Save(pathSave);
+            player.Save(pathSave);
         }
     }
 }
