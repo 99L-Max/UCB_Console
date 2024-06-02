@@ -127,7 +127,7 @@ namespace UCB_Console
 
         public void Save(string path)
         {
-            var name = $"N - {_bandits[0].Horizon}, M0 - {_bandits[0].StartBatchSize}, T - {_bandits[0].TimeChangeBatch}, A - {_bandits[0].Alpha}";
+            var name = $"N - {_bandits[0].Horizon}, K - {_bandits[0].NumberBatches}, M0 - {_bandits[0].StartBatchSize}, T - {_bandits[0].TimeChangeBatch}, A - {_bandits[0].Alpha}";
             var time = $"{DateTime.Now:d} {DateTime.Now.Hour:d2}.{DateTime.Now.Minute:d2}.{DateTime.Now.Second:d2}";
 
             using StreamWriter writer = new(@$"{path}\{name} ({time}).txt");

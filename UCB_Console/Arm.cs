@@ -22,7 +22,7 @@ namespace UCB_Console
         public void Reset() =>
             Income = UCB = Counter = 0;
 
-        public void Select(int data, ref int countSumData)
+        public void Play(int data, ref int countSumData)
         {
             countSumData += data;
             Counter += data;

@@ -17,7 +17,7 @@ namespace UCB_Console
 
         public RegretTable(double[] deviations, Bandit[] bandits)
         {
-            _deviations = deviations.OrderBy(x => x).ToArray();
+            _deviations = deviations.OrderBy(x => x).Distinct().ToArray();
             _parameters = bandits.Select(b => b.Parameter).ToArray();
             _regrets = new double[deviations.Length, bandits.Length];
 

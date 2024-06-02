@@ -19,33 +19,30 @@ namespace UCB_Console
             var variance = 0.25d;
 
             //Отклонения d
-            var deviationStart = 0.9d;
+            var deviationStart = 0.0d;
             var deviationDelta = 0.3d;
-            var deviationCount = 7;
+            var deviationCount = 101;
 
             var deviations = Enumerable.Range(0, deviationCount).Select(x => Math.Round(deviationStart + x * deviationDelta, 1)).ToArray();
 
             //Параметр стратегии a
-            var parameterStart = 0.45d;
-            var parameterDelta = 0.01d;
-            var parameterCount = 30;
+            var parameterCount = 4;
 
             //Настройки симуляций
             var countGames = 200000;
-            var countThreads = 6;
+            var countThreads = 5;
 
             //Данные бандита
             var countArms = 2;
-            var startBatchSize = 50;
             var numberBatches = 50;
             var timeChangeBatch = 10;
-            var alpha = 1.0d;
+            var alpha = 1.5d;
 
             //Массивы для бандитов
             var countsArms = Enumerable.Repeat(countArms, parameterCount).ToArray();
             var numbersBatches = Enumerable.Repeat(numberBatches, parameterCount).ToArray();
-            var startsBatchSize = Enumerable.Repeat(startBatchSize, parameterCount).ToArray();
-            var parameters = Enumerable.Range(0, parameterCount).Select(i => Math.Round(parameterStart + i * parameterDelta, 2)).ToArray();
+            var startsBatchSize = new int[] { 50, 100, 150, 200 };
+            var parameters = new double[] { 0.67, 0.64, 0.63, 0.63 };
             var alphas = Enumerable.Repeat(alpha, parameterCount).ToArray();
             var timesChangeBatch = Enumerable.Repeat(timeChangeBatch, parameterCount).ToArray();
 

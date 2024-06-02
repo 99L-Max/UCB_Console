@@ -98,7 +98,7 @@ namespace UCB_Console
                     foreach (var arm in _arms)
                     {
                         arm.Reset();
-                        arm.Select(StartBatchSize, ref sumCountData);
+                        arm.Play(StartBatchSize, ref sumCountData);
                     }
 
                     foreach (var batch in _batches)
@@ -106,7 +106,7 @@ namespace UCB_Console
                         foreach (var arm in _arms)
                             arm.SetUCB(sumCountData, Parameter);
 
-                        _arms.OrderByDescending(a => a.UCB).First().Select(batch, ref sumCountData);
+                        _arms.OrderByDescending(a => a.UCB).First().Play(batch, ref sumCountData);
                     }
 
                     _regrets[dev] += maxIncome - _arms.Select(a => a.Income).Sum();
